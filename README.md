@@ -4,6 +4,8 @@ I vibe-coded this for personal use, but decided to release it so everyone can us
 I haven't tested it on other systems, so it may not work for you. Basically, it's Exile Leveling adapted for a single monitor. You can import your own build, and it will show you which gems to buy in town. It should automatically show only the gems available to you. The route may not be perfect; I've tested it up to Act 5, and it covers the important stuff. You can skip steps and go back with keybinds, and check the passive tree and gems from your PoB build. You can also disable skill-set loadouts, so you don't see gems you'll only need for T16 maps while you're still in Act 1.
 The route should handle crashes and mistakes pretty well. For example, if you forget to buy a gem in town, you can come back and see what you should have done before leaving, and which zone you need to return to.
 
+https://youtu.be/J7k3g3uvt38?si=Phr3i78tg3EkT5qu - Setup Guide and Test Run
+
 ## Will It Run On My System?
 
 This is a Linux app, not an Arch-only app. It should run on a Wayland desktop if your compositor supports the `wlr-layer-shell` protocol and you can install QuickShell with its Qt 6 QML and Wayland modules. Hyprland is not required for manual launch, but the automatic game detection and workspace behavior in `auto-watcher.sh` are Hyprland-only. I have only tested it on my own setup, so other distributions and compositors are not confirmed.
