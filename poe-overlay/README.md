@@ -57,7 +57,7 @@ Other distributions: [QuickShell installation instructions](https://quickshell.o
 
 ```sh
 # Replace the URL with this repository's GitHub URL.
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git poe-overlay
+git clone https://github.com/LiomyL/poe-overlay.git poe-overlay
 cd poe-overlay
 chmod +x manual.sh auto-watcher.sh
 ./manual.sh
