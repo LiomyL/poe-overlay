@@ -59,6 +59,7 @@ ShellRoot {
     property string checkpointLogStamp: ""
     property string pendingGeneratedAreaId: ""
     property var routeItems: []
+    property var routeNextItems: []
     property var routeSections: []
     property var collapsedActs: ({})
     property int autoRouteAct: -1
@@ -74,6 +75,7 @@ ShellRoot {
     property bool overlayVisible: true
     property bool hudEnabled: true
     property bool buildViewerVisible: false
+    property bool showNextRouteStep: true
     property bool routeSettingsLoaded: false
     property string manualBandit: "auto"
     property int settingsTab: 0
@@ -126,6 +128,7 @@ ShellRoot {
         } catch (error) {
             routeData = null
             routeItems = [{ html: "Could not load route files", hint: false, optional: false }]
+            routeNextItems = []
             console.warn("Could not load route files:", error)
         }
     }
@@ -196,6 +199,7 @@ ShellRoot {
                 && routeSections[autoRouteAct].rows[autoRouteStep]
             if (selectedRow)
                 routeItems = selectedRow.items
+            updateNextRouteItems()
         } else {
             updateRouteGoal()
         }
@@ -416,6 +420,8 @@ ShellRoot {
             }
             if (state && root.banditOptions.some(option => option.value === state.bandit))
                 root.manualBandit = state.bandit
+            if (state && typeof state.showNextRouteStep === "boolean")
+                root.showNextRouteStep = state.showNextRouteStep
             if (state && typeof state.logPath === "string" && state.logPath.trim())
                 root.logPath = state.logPath
         } catch (error) {
@@ -436,7 +442,8 @@ ShellRoot {
         pendingHudState = JSON.stringify({
             enabled: root.hudEnabled,
             bandit: root.manualBandit,
-            logPath: root.logPath
+            logPath: root.logPath,
+            showNextRouteStep: root.showNextRouteStep
         })
         hudStateProcess.command = [pythonPath, parserPath, "--overlay-state", hudStatePath]
         hudStateProcess.running = true
@@ -465,6 +472,14 @@ ShellRoot {
         root.hudEnabled = enabled
         root.overlayVisible = enabled
         root.saveHudState()
+    }
+
+    function setShowNextRouteStep(enabled) {
+        if (showNextRouteStep === enabled)
+            return
+        showNextRouteStep = enabled
+        updateNextRouteItems()
+        saveHudState()
     }
 
     function setRouteBandit(value) {
@@ -736,6 +751,7 @@ ShellRoot {
             if (exitCode === 0) {
                 root.buildData = null
                 root.routeItems = []
+                root.routeNextItems = []
                 root.importStatus = "Build removed"
                 root.loadRouteData()
             } else {
@@ -1127,6 +1143,29 @@ ShellRoot {
         return html.replace(/\s+/g, " ").trim()
     }
 
+    function updateNextRouteItems(areas = null) {
+        if (!showNextRouteStep || !routeSections.length || !areasFile.loaded) {
+            routeNextItems = []
+            return
+        }
+        try {
+            const areaData = areas || readStaticJson("areas", areasFile)
+            const nextStep = RouteProgress.resolveNextRouteStep(
+                routeSections,
+                autoRouteAct,
+                autoRouteStep,
+                recoveryTargetAreaId,
+                areaData
+            )
+            const nextRow = nextStep && routeSections[nextStep.act]
+                && routeSections[nextStep.act].rows[nextStep.step]
+            routeNextItems = nextRow ? nextRow.items : []
+        } catch (error) {
+            routeNextItems = []
+            console.warn("Could not update next route step:", error)
+        }
+    }
+
     function updateRouteGoal() {
         if (!areasFile.loaded || !routeData)
             return
@@ -1326,8 +1365,10 @@ ShellRoot {
                     recovery: true
                 }, ...routeItems]
             }
+            updateNextRouteItems(areas)
         } catch (error) {
             routeItems = [{ html: "Could not read route data", hint: false, optional: false }]
+            routeNextItems = []
             console.warn("Could not load campaign route data:", error)
         }
     }
@@ -1342,6 +1383,7 @@ ShellRoot {
         recoveryTargetAreaId = ""
         routePausedForDetour = false
         routeItems = selectedRow.items
+        updateNextRouteItems()
         routeCheckpointSelectionPending = !checkpointLogStamp
         saveRouteCheckpoint(checkpointLogStamp)
     }
@@ -1361,6 +1403,7 @@ ShellRoot {
         routeCheckpointSavePending = false
         routeCheckpointSelectionPending = false
         routeItems = []
+        routeNextItems = []
         clearRouteCheckpoint()
     }
 
@@ -1408,6 +1451,7 @@ ShellRoot {
                 && routeSections[autoRouteAct].rows[autoRouteStep]
             if (selectedRow)
                 routeItems = selectedRow.items
+            updateNextRouteItems()
         } else {
             updateRouteGoal()
         }
@@ -1420,6 +1464,8 @@ ShellRoot {
         zone: root.zone
         routePausedForDetour: root.routePausedForDetour
         routeItems: root.routeItems
+        routeNextItems: root.routeNextItems
+        showNextRouteStep: root.showNextRouteStep
     }
 
     BuildViewer {
@@ -1787,6 +1833,43 @@ ShellRoot {
                                 font.weight: Font.DemiBold
                                 elide: Text.ElideRight
                                 anchors.verticalCenter: parent.verticalCenter
+                            }
+                        }
+
+                        Switch {
+                            id: showNextSwitch
+                            width: parent.width
+                            height: 32
+                            text: "Show next step"
+                            checked: root.showNextRouteStep
+                            onClicked: root.setShowNextRouteStep(checked)
+
+                            indicator: Rectangle {
+                                x: showNextSwitch.width - width - showNextSwitch.rightPadding
+                                y: (showNextSwitch.height - height) / 2
+                                width: 34
+                                height: 18
+                                radius: 9
+                                color: showNextSwitch.checked ? "#d8a85e" : "#222620"
+                                border.color: showNextSwitch.checked ? "#e4ad55" : "#64685c"
+
+                                Rectangle {
+                                    x: showNextSwitch.checked ? parent.width - width - 3 : 3
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 12
+                                    height: 12
+                                    radius: 6
+                                    color: showNextSwitch.checked ? "#171916" : "#a8aa9f"
+                                }
+                            }
+
+                            contentItem: Text {
+                                text: showNextSwitch.text
+                                color: "#d2d0c7"
+                                font.pixelSize: 13
+                                verticalAlignment: Text.AlignVCenter
+                                rightPadding: showNextSwitch.indicator.width + showNextSwitch.spacing
+                                elide: Text.ElideRight
                             }
                         }
 

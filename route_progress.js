@@ -153,6 +153,26 @@ function findRecoveryStep(routeActs, areas, recoveryTargetAreaId, cursorAct, cur
     return null
 }
 
+function resolveNextRouteStep(routeActs, cursorAct, cursorStep, recoveryTargetAreaId, areas = {}) {
+    let baseStep = { act: cursorAct, step: cursorStep }
+    if (recoveryTargetAreaId) {
+        baseStep = findRecoveryStep(routeActs, areas, recoveryTargetAreaId, cursorAct, cursorStep)
+        if (!baseStep)
+            return null
+    }
+
+    if (baseStep.act < 0 || baseStep.step < 0 || !routeActs[baseStep.act])
+        return null
+    const currentRows = routeActs[baseStep.act].rows || []
+    if (currentRows[baseStep.step + 1])
+        return { act: baseStep.act, step: baseStep.step + 1 }
+    for (let act = baseStep.act + 1; act < routeActs.length; act++) {
+        if (routeActs[act].rows && routeActs[act].rows.length)
+            return { act, step: 0 }
+    }
+    return null
+}
+
 function resolveRecoveryStep(routeActs, areas, areaId, recoveryTargetAreaId, cursorAct, cursorStep) {
     if (!recoveryTargetAreaId || areaId !== recoveryTargetAreaId)
         return null
@@ -199,6 +219,7 @@ if (typeof module !== "undefined" && module.exports)
         findPausedStep,
         findLocalStep,
         findRecoveryStep,
+        resolveNextRouteStep,
         resolveRecoveryStep,
         updateRecoveryTarget,
         checkpointMatches,

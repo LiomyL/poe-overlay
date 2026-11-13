@@ -9,6 +9,8 @@ PanelWindow {
     property string zone: ""
     property bool routePausedForDetour: false
     property var routeItems: []
+    property var routeNextItems: []
+    property bool showNextRouteStep: true
 
     visible: true
 
@@ -21,7 +23,11 @@ PanelWindow {
         left: screenLeft
     }
 
-    implicitWidth: Math.max(headerRow.implicitWidth + 20, routeList.implicitWidth + 20)
+    implicitWidth: Math.max(
+        headerRow.implicitWidth + 20,
+        routeList.implicitWidth + 20,
+        nextSection.visible ? nextSection.implicitWidth + 20 : 0
+    )
     implicitHeight: hudContent.implicitHeight + 18
 
     WlrLayershell.layer: WlrLayer.Overlay
@@ -103,6 +109,61 @@ PanelWindow {
                             font.pixelSize: 13
                             wrapMode: Text.Wrap
                             width: Math.min(implicitWidth, Math.max(80, Screen.width * 0.4 - 34))
+                        }
+                    }
+                }
+            }
+
+            Column {
+                id: nextSection
+                visible: showNextRouteStep && routeNextItems.length > 0
+                width: childrenRect.width
+                spacing: 4
+
+                Rectangle {
+                    width: Math.max(80, nextList.implicitWidth)
+                    height: 1
+                    color: "#413a33"
+                }
+
+                Text {
+                    text: "Next"
+                    color: "#d8a85e"
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                }
+
+                Column {
+                    id: nextList
+                    width: childrenRect.width
+                    spacing: 3
+
+                    Repeater {
+                        model: routeNextItems
+
+                        delegate: Row {
+                            required property var modelData
+                            width: nextText.width + 12
+                            spacing: 6
+
+                            Rectangle {
+                                width: 3
+                                height: 3
+                                radius: 2
+                                color: modelData.hint ? "#80c7d4" : "#8e887c"
+                                anchors.top: parent.top
+                                anchors.topMargin: 6
+                            }
+
+                            Text {
+                                id: nextText
+                                text: modelData.html
+                                textFormat: Text.RichText
+                                color: modelData.optional ? "#969087" : "#c6c1b6"
+                                font.pixelSize: 12
+                                wrapMode: Text.Wrap
+                                width: Math.min(implicitWidth, Math.max(80, Screen.width * 0.4 - 34))
+                            }
                         }
                     }
                 }

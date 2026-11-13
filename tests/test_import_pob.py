@@ -98,6 +98,11 @@ class ParseBuildTests(unittest.TestCase):
 
         self.assertEqual(state["logPath"], "/games/poe/Client.txt")
 
+    def test_overlay_state_preserves_next_step_preference(self):
+        state = validate_overlay_state({"enabled": True, "showNextRouteStep": False})
+
+        self.assertIs(state["showNextRouteStep"], False)
+
     def test_overlay_state_rejects_non_string_game_log_path(self):
         with self.assertRaisesRegex(ValueError, "game log path"):
             validate_overlay_state({"enabled": True, "logPath": 123})

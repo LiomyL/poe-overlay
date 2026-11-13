@@ -5,6 +5,7 @@ const {
     findLocalStep,
     findPausedStep,
     findRecoveryStep,
+    resolveNextRouteStep,
     resolveRecoveryStep,
     resolveAutoStep,
     shiftRouteCursor,
@@ -48,6 +49,44 @@ test("manual cursor shifts across acts and remains at valid route endpoints", ()
     assert.deepEqual(shiftRouteCursor(acts, 0, 0, -1), { act: 0, step: 0 })
     assert.deepEqual(shiftRouteCursor(acts, 1, 0, 1), { act: 1, step: 0 })
     assert.deepEqual(shiftRouteCursor(acts, -1, -1, 1), { act: 0, step: 0 })
+})
+
+test("next route step follows the selected cursor and crosses act boundaries", () => {
+    const acts = [
+        { rows: [{}, {}] },
+        { rows: [{}] },
+    ]
+
+    assert.deepEqual(resolveNextRouteStep(acts, 0, 0, ""), { act: 0, step: 1 })
+    assert.deepEqual(resolveNextRouteStep(acts, 0, 1, ""), { act: 1, step: 0 })
+    assert.equal(resolveNextRouteStep(acts, 1, 0, ""), null)
+})
+
+test("next route step during a detour is based on the recovery area", () => {
+    const acts = [{
+        rows: [
+            { sourceAreaId: "Town", destinationAreaId: "AreaA" },
+            { sourceAreaId: "AreaA", destinationAreaId: "AreaB" },
+            { sourceAreaId: "AreaB", destinationAreaId: "Town" },
+            { sourceAreaId: "Town", destinationAreaId: "AreaC" },
+            { sourceAreaId: "AreaC", destinationAreaId: "AreaD" },
+        ],
+    }]
+
+    assert.deepEqual(
+        resolveNextRouteStep(acts, 0, 4, "Town"),
+        { act: 0, step: 4 },
+    )
+    assert.equal(resolveNextRouteStep(acts, 0, 4, "MissingArea"), null)
+
+    const actBoundary = [
+        { rows: [{ sourceAreaId: "Town" }] },
+        { rows: [{}] },
+    ]
+    assert.deepEqual(
+        resolveNextRouteStep(actBoundary, 0, 0, "Town"),
+        { act: 1, step: 0 },
+    )
 })
 
 test("a matching predecessor resolves repeated destinations without regressing", () => {
